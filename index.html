@@ -614,6 +614,112 @@
     .btn-export { background: var(--income); color: #fff; }
     .btn-danger { background: transparent; color: var(--expense); border: 2px solid var(--expense); }
 
+    /* ==================== 账单筛选条 ==================== */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 16px 12px;
+    }
+    .filter-type {
+      display: flex;
+      gap: 0;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--card-bg);
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-type button {
+      padding: 8px 16px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-light);
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .filter-type button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .filter-month {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-bg);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-month button {
+      width: 32px; height: 32px;
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .filter-month button:active { background: var(--border); }
+    .filter-month .month-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      padding: 0 8px;
+      min-width: 80px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .filter-info {
+      font-size: 13px;
+      color: var(--text-light);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .filter-cat-row {
+      margin: 0 16px 8px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .filter-cat-row select {
+      flex: 1;
+      padding: 8px 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--card-bg);
+      color: var(--text);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8c8c' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-cat-row select:focus { border-color: var(--primary); }
+    .filter-cat-row .btn-clear-filter {
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-light);
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .filter-cat-row .btn-clear-filter:active { background: var(--border); }
+
     /* ==================== 页面切换容器 ==================== */
     .page { display: none; }
     .page.active { display: block; }
@@ -750,6 +856,30 @@
     </button>
   </div>
 
+  <!-- ==================== 首页：账单筛选条 ==================== -->
+  <div class="filter-bar">
+    <div class="filter-type">
+      <button class="active" data-type="all">全部</button>
+      <button data-type="expense">支出</button>
+      <button data-type="income">收入</button>
+    </div>
+    <div class="filter-month">
+      <button id="btnPrevMonth">◀</button>
+      <span class="month-label" id="filterMonthLabel">7月</span>
+      <button id="btnNextMonth">▶</button>
+    </div>
+  </div>
+
+  <!-- 分类筛选 + 清除按钮 -->
+  <div class="filter-cat-row">
+    <select id="filterCategory">
+      <option value="all">📂 全部分类</option>
+    </select>
+    <button class="btn-clear-filter" id="btnClearFilter">✕ 清除筛选</button>
+  </div>
+
+  <div class="filter-info" id="filterInfo"></div>
+
   <!-- ==================== 首页：账单列表 ==================== -->
   <div class="bill-section">
     <h2>
@@ -802,6 +932,18 @@
   <!-- ==================== 设置页 ==================== -->
   <div class="page page-settings" id="pageSettings">
     <div class="settings-section">
+      <!-- 账单周期 -->
+      <div class="setting-card">
+        <h3>📅 账单周期</h3>
+        <div class="setting-row">
+          <span style="font-size:15px;white-space:nowrap;">每月</span>
+          <input type="number" id="cycleDayInput" placeholder="1" min="1" max="28" inputmode="numeric" style="width:80px;text-align:center;">
+          <span style="font-size:15px;white-space:nowrap;">号开始</span>
+          <button class="btn-sm" id="btnSaveCycle">保存</button>
+        </div>
+        <div class="setting-hint" id="cycleHint">默认为每月1号。比如每月8号发工资，就设为8号</div>
+      </div>
+
       <!-- 月度预算 -->
       <div class="setting-card">
         <h3>💸 月度预算设置</h3>
@@ -1252,6 +1394,7 @@
 
       // 关闭弹出层并刷新首页
       closeAddPanel();
+      populateCategorySelect();  // 更新分类下拉（如果有新分类）
       refreshHome();
     }
 
@@ -1290,15 +1433,12 @@
     // ==================== 11. 首页渲染 ====================
     function renderSummary() {
       const records = loadRecords();
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+      const cycle = getCurrentCycle();
 
       let totalIncome = 0, totalExpense = 0;
       for (let i = 0; i < records.length; i++) {
         const r = records[i];
-        const parts = r.date.split("-");
-        if (parseInt(parts[0]) === currentYear && parseInt(parts[1]) === currentMonth) {
+        if (recordInCycle(r, cycle.year, cycle.month)) {
           if (r.type === "income") totalIncome += r.amount;
           else totalExpense += r.amount;
         }
@@ -1312,18 +1452,50 @@
     }
 
     function renderBillList() {
-      const records = loadRecords();
-      const container = $("billList");
-      $("billCount").textContent = "共 " + records.length + " 条";
+      const allRecords = loadRecords();
 
-      if (records.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>还没有记录，点击上方按钮开始记账吧！</p></div>';
+      // 按照筛选条件过滤记录
+      const filtered = allRecords.filter(function(r) {
+        // 类型筛选
+        if (filterType !== "all" && r.type !== filterType) return false;
+        // 分类筛选
+        if (filterCategory !== "all" && r.category !== filterCategory) return false;
+        // 周期筛选（用账单周期函数判断）
+        if (!recordInCycle(r, filterYear, filterMonth)) return false;
+        return true;
+      });
+
+      // 汇总筛选结果
+      let sumExpense = 0, sumIncome = 0;
+      for (let i = 0; i < filtered.length; i++) {
+        if (filtered[i].type === "expense") sumExpense += filtered[i].amount;
+        else sumIncome += filtered[i].amount;
+      }
+      const diff = sumIncome - sumExpense;
+      let infoText = "共 " + filtered.length + " 条";
+      if (filtered.length > 0) {
+        infoText += " · 收入 ¥" + sumIncome.toFixed(0) + " 支出 ¥" + sumExpense.toFixed(0);
+        infoText += " · " + (diff >= 0 ? "结余 ¥" : "超支 ¥") + Math.abs(diff).toFixed(0);
+      }
+      $("filterInfo").textContent = infoText;
+
+      // 更新标题条数
+      $("billCount").textContent = "共 " + filtered.length + " 条";
+
+      const container = $("billList");
+      if (filtered.length === 0) {
+        // 区分"全部没有"和"被筛掉了"
+        if (allRecords.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>还没有记录，点击上方按钮开始记账吧！</p></div>';
+        } else {
+          container.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>当前筛选条件下没有匹配的账单</p></div>';
+        }
         return;
       }
 
       let html = "";
-      for (let i = 0; i < records.length; i++) {
-        const r = records[i];
+      for (let i = 0; i < filtered.length; i++) {
+        const r = filtered[i];
         const icon = r.categoryEmoji || "📌";
         const bgClass = r.type === "expense" ? "expense-bg" : "income-bg";
         const amountClass = r.type === "expense" ? "expense-amount" : "income-amount";
@@ -1341,7 +1513,7 @@
       }
       container.innerHTML = html;
 
-      // 绑定删除事件
+      // 绑定删除事件（删除后保持当前筛选）
       const deleteBtns = container.querySelectorAll(".btn-delete");
       for (let j = 0; j < deleteBtns.length; j++) {
         deleteBtns[j].addEventListener("click", function(e) {
@@ -1350,6 +1522,9 @@
           handleDeleteRecord(id);
         });
       }
+
+      // 更新筛选条 UI
+      updateFilterUI();
     }
 
     function handleDeleteRecord(id) {
@@ -1366,12 +1541,164 @@
     }
 
     function refreshHome() {
+      // 同步顶部日期（按当前周期）
+      const cycle = getCurrentCycle();
+      $("headerDate").textContent = getCycleLabel(cycle.year, cycle.month);
       renderSummary();
       renderBudget(getMonthExpense());
       renderBillList();
     }
 
-    // ==================== 12. 预算功能 ====================
+    // ==================== 12. 筛选功能 ====================
+
+    /** 更新筛选条的 UI 状态（按钮高亮、月份标签） */
+    function updateFilterUI() {
+      // 类型按钮高亮
+      const typeBtns = document.querySelectorAll(".filter-type button");
+      for (let i = 0; i < typeBtns.length; i++) {
+        typeBtns[i].classList.remove("active");
+        if (typeBtns[i].getAttribute("data-type") === filterType) {
+          typeBtns[i].classList.add("active");
+        }
+      }
+      // 周期标签
+      if (getCycleStartDay() === 1) {
+        $("filterMonthLabel").textContent = filterYear + "年" + filterMonth + "月";
+      } else {
+        $("filterMonthLabel").textContent = getCycleLabel(filterYear, filterMonth);
+      }
+      // 分类下拉：同步选中值
+      $("filterCategory").value = filterCategory;
+    }
+
+    /** 动态填充分类下拉选项（根据当前已记账的分类） */
+    function populateCategorySelect() {
+      const records = loadRecords();
+      const catSet = {};  // 用对象去重
+      for (let i = 0; i < records.length; i++) {
+        catSet[records[i].category] = true;
+      }
+      const cats = Object.keys(catSet).sort();  // 按名称排序
+
+      const select = $("filterCategory");
+      // 保留「全部分类」选项，追加其他分类
+      let html = '<option value="all">📂 全部分类</option>';
+      for (let j = 0; j < cats.length; j++) {
+        html += '<option value="' + cats[j] + '">' + cats[j] + '</option>';
+      }
+      select.innerHTML = html;
+      select.value = filterCategory;
+    }
+
+    /** 切换类型筛选 */
+    function handleFilterType(type) {
+      filterType = type;
+      renderBillList();
+    }
+
+    /** 切换分类筛选 */
+    function handleFilterCategory() {
+      filterCategory = $("filterCategory").value;
+      renderBillList();
+    }
+
+    /** 清除所有筛选 */
+    function handleClearFilter() {
+      filterType = "all";
+      filterCategory = "all";
+      const now = new Date();
+      filterYear = now.getFullYear();
+      filterMonth = now.getMonth() + 1;
+      renderBillList();
+    }
+
+    /** 切换月份 */
+    function changeFilterMonth(delta) {
+      filterMonth += delta;
+      if (filterMonth > 12) { filterMonth = 1; filterYear++; }
+      if (filterMonth < 1) { filterMonth = 12; filterYear--; }
+      renderBillList();
+    }
+
+    /** 点击月份标签 → 回到本月 */
+    function resetFilterMonthToNow() {
+      const now = new Date();
+      filterYear = now.getFullYear();
+      filterMonth = now.getMonth() + 1;
+      renderBillList();
+    }
+
+    /** 重置所有筛选（回到首页时调用） */
+    function resetFilters() {
+      filterType = "all";
+      filterCategory = "all";
+      const now = new Date();
+      filterYear = now.getFullYear();
+      filterMonth = now.getMonth() + 1;
+    }
+
+    // ==================== 13. 账单周期核心函数 ====================
+
+    const STORAGE_CYCLE_DAY = "accounting_cycle_day";
+
+    /** 获取账单周期起始日（存入的值，默认1） */
+    function getCycleStartDay() {
+      const val = localStorage.getItem(STORAGE_CYCLE_DAY);
+      var d = val ? parseInt(val) : 1;
+      return (d >= 1 && d <= 28) ? d : 1;
+    }
+
+    /** 判断某个日期属于哪个"周期月"（返回 {year, month}，month 是周期开始的那个月） */
+    function getCycleForDate(dateStr) {
+      var startDay = getCycleStartDay();
+      var parts = dateStr.split("-");
+      var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+      if (d >= startDay) return { year: y, month: m };
+      // 日期 < 起始日，属于上一个月的周期
+      if (m === 1) return { year: y - 1, month: 12 };
+      return { year: y, month: m - 1 };
+    }
+
+    /** 获取"今天"所属的周期标签 */
+    function getCurrentCycle() {
+      return getCycleForDate(
+        new Date().getFullYear() + "-" +
+        (new Date().getMonth() + 1) + "-" +
+        new Date().getDate()
+      );
+    }
+
+    /** 获取某个周期的起始 Date 对象 */
+    function getCycleStartDate(cycleYear, cycleMonth) {
+      return new Date(cycleYear, cycleMonth - 1, getCycleStartDay());
+    }
+
+    /** 获取某个周期的结束 Date 对象 */
+    function getCycleEndDate(cycleYear, cycleMonth) {
+      var start = getCycleStartDate(cycleYear, cycleMonth);
+      start.setMonth(start.getMonth() + 1);
+      start.setDate(getCycleStartDay() - 1 || 0);
+      return start;
+    }
+
+    /** 生成周期标签文字，如 "7月8日 - 8月7日" */
+    function getCycleLabel(cycleYear, cycleMonth) {
+      var startDay = getCycleStartDay();
+      var endDate = getCycleEndDate(cycleYear, cycleMonth);
+      var endM = endDate.getMonth() + 1, endD = endDate.getDate();
+      return cycleMonth + "月" + startDay + "日 - " + endM + "月" + endD + "日";
+    }
+
+    /** 判断一条记录是否属于指定周期 */
+    function recordInCycle(record, cycleYear, cycleMonth) {
+      var start = getCycleStartDate(cycleYear, cycleMonth);
+      var end = getCycleEndDate(cycleYear, cycleMonth);
+      var parts = record.date.split("-");
+      var rDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      return rDate >= start && rDate <= end;
+    }
+
+    // ==================== 14. 预算功能 ====================
 
     const STORAGE_BUDGET = "accounting_budget";
 
@@ -1424,19 +1751,16 @@
     }
 
     /**
-     * 获取本月支出总额（供预算显示用）
+     * 获取当前周期支出总额（供预算显示用）
      */
     function getMonthExpense() {
       const records = loadRecords();
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = now.getMonth() + 1;
+      const cycle = getCurrentCycle();
       let total = 0;
       for (let i = 0; i < records.length; i++) {
         const r = records[i];
         if (r.type !== "expense") continue;
-        const parts = r.date.split("-");
-        if (parseInt(parts[0]) === y && parseInt(parts[1]) === m) {
+        if (recordInCycle(r, cycle.year, cycle.month)) {
           total += r.amount;
         }
       }
@@ -1447,11 +1771,33 @@
 
     /** 渲染设置页 */
     function renderSettings() {
+      // 账单周期
+      const cycleDay = getCycleStartDay();
+      $("cycleDayInput").value = cycleDay;
+      if (cycleDay === 1) {
+        $("cycleHint").textContent = "默认为每月1号。比如每月8号发工资，就设为8号";
+      } else {
+        $("cycleHint").textContent = "当前周期：每月" + cycleDay + "号开始（如 " + getCycleLabel(getCurrentCycle().year, getCurrentCycle().month) + "）";
+      }
+      // 预算
       const budget = getBudget();
       $("budgetInput").value = budget > 0 ? budget : "";
       $("budgetHint").textContent = budget > 0
         ? "当前预算：¥" + budget.toFixed(0)
         : "设置后，首页将显示预算使用进度";
+    }
+
+    /** 保存账单周期起始日 */
+    function handleSaveCycle() {
+      const val = parseInt($("cycleDayInput").value);
+      if (isNaN(val) || val < 1 || val > 28) {
+        alert("请输入 1~28 之间的数字");
+        return;
+      }
+      localStorage.setItem(STORAGE_CYCLE_DAY, val.toString());
+      $("cycleHint").textContent = "当前周期：每月" + val + "号开始（" + getCycleLabel(getCurrentCycle().year, getCurrentCycle().month) + "）—— 已保存";
+      // 刷新首页
+      refreshHome();
     }
 
     /** 保存预算 */
@@ -1528,6 +1874,16 @@
     /** 当前显示的页面 */
     let currentPage = "home";
 
+    /** 账单筛选状态 */
+    let filterType = "all";              // 'all' | 'expense' | 'income'
+    let filterCategory = "all";          // 'all' 或具体分类名
+    let filterYear, filterMonth;         // 筛选的年/月（默认本月）
+    (function resetFilterMonth() {
+      const now = new Date();
+      filterYear = now.getFullYear();
+      filterMonth = now.getMonth() + 1;
+    })();
+
     /**
      * 切换到指定页面
      * @param {string} pageName - 'home' 或 'analysis'
@@ -1542,6 +1898,8 @@
       // 显示目标页面
       if (pageName === "home") {
         $("pageHome").classList.add("active");
+        // 从分析/设置页切回首页时，刷新本月的账单（保持筛选）
+        renderBillList();
       } else if (pageName === "analysis") {
         $("pageAnalysis").classList.add("active");
         renderAnalysis();
@@ -1633,15 +1991,11 @@
      * 渲染文字统计（记账天数、日均、最大分类）
      */
     function renderAnalysisStats(records) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const daysInMonth = new Date(year, month, 0).getDate();
+      const cycle = getCurrentCycle();
 
-      // 过滤本月记录
+      // 过滤当前周期记录
       const monthRecords = records.filter(function(r) {
-        const parts = r.date.split("-");
-        return parseInt(parts[0]) === year && parseInt(parts[1]) === month;
+        return recordInCycle(r, cycle.year, cycle.month);
       });
 
       // 记账天数（去重）
@@ -1684,17 +2038,14 @@
      * 绘制饼图：本月各分类支出占比
      */
     function renderPieChart(records) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
+      const cycle = getCurrentCycle();
 
-      // 统计本月各分类支出
+      // 统计当前周期各分类支出
       const categoryData = {};
       for (let i = 0; i < records.length; i++) {
         const r = records[i];
         if (r.type !== "expense") continue;
-        const parts = r.date.split("-");
-        if (parseInt(parts[0]) !== year || parseInt(parts[1]) !== month) continue;
+        if (!recordInCycle(r, cycle.year, cycle.month)) continue;
         if (!categoryData[r.category]) categoryData[r.category] = 0;
         categoryData[r.category] += r.amount;
       }
@@ -1829,33 +2180,38 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      // 生成近6个月标签
+      // 生成近6个周期标签
       const now = new Date();
-      const months = [];
+      const cycles = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        months.push({
-          year: d.getFullYear(),
-          month: d.getMonth() + 1,
-          label: (d.getMonth() + 1) + "月"
+        const startDay = getCycleStartDay();
+        const yy = d.getFullYear();
+        const mm = d.getMonth() + 1;
+        // 简短标签：如 "7/8-8/7" 或默认 "7月"
+        const shortLabel = startDay === 1
+          ? mm + "月"
+          : (mm + "/" + startDay + "-" + ((mm === 12 ? 1 : mm + 1)) + "/" + (startDay - 1 || new Date(yy, mm, 0).getDate()));
+        cycles.push({
+          year: yy,
+          month: mm,
+          label: shortLabel
         });
       }
 
-      // 统计每月收支
-      const monthlyData = months.map(function() {
+      // 统计每个周期的收支
+      const cycleData = cycles.map(function() {
         return { expense: 0, income: 0 };
       });
       for (let i = 0; i < records.length; i++) {
         const r = records[i];
-        const parts = r.date.split("-");
-        const rYear = parseInt(parts[0]);
-        const rMonth = parseInt(parts[1]);
-        for (let j = 0; j < months.length; j++) {
-          if (rYear === months[j].year && rMonth === months[j].month) {
+        const cycle = getCycleForDate(r.date);
+        for (let j = 0; j < cycles.length; j++) {
+          if (cycle.year === cycles[j].year && cycle.month === cycles[j].month) {
             if (r.type === "expense") {
-              monthlyData[j].expense += r.amount;
+              cycleData[j].expense += r.amount;
             } else {
-              monthlyData[j].income += r.amount;
+              cycleData[j].income += r.amount;
             }
             break;
           }
@@ -1864,8 +2220,8 @@
 
       // 找出最大值用于Y轴缩放
       let maxVal = 0;
-      for (let i = 0; i < monthlyData.length; i++) {
-        maxVal = Math.max(maxVal, monthlyData[i].expense, monthlyData[i].income);
+      for (let i = 0; i < cycleData.length; i++) {
+        maxVal = Math.max(maxVal, cycleData[i].expense, cycleData[i].income);
       }
       if (maxVal === 0) maxVal = 1000;  // 默认刻度
 
@@ -1894,14 +2250,14 @@
       }
 
       // X轴标签
-      const barWidth = plotW / months.length;
-      for (let i = 0; i < months.length; i++) {
+      const barWidth = plotW / cycles.length;
+      for (let i = 0; i < cycles.length; i++) {
         const x = padLeft + barWidth * i + barWidth / 2;
         ctx.fillStyle = "#8c8c8c";
         ctx.font = "12px 'YouYuan','PingFang SC',sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText(months[i].label, x, padTop + plotH + 8);
+        ctx.fillText(cycles[i].label, x, padTop + plotH + 8);
       }
 
       // 绘制柱子（支出）和折线（收入）
@@ -1909,8 +2265,8 @@
       const singleBarWidth = (barWidth - barGap * 2) / 2;
 
       // 先画支出柱子
-      for (let i = 0; i < months.length; i++) {
-        const h = (monthlyData[i].expense / maxVal) * plotH;
+      for (let i = 0; i < cycles.length; i++) {
+        const h = (cycleData[i].expense / maxVal) * plotH;
         const x = padLeft + barWidth * i + barGap;
         const y = padTop + plotH - h;
 
@@ -1919,8 +2275,8 @@
       }
 
       // 再画收入柱子
-      for (let i = 0; i < months.length; i++) {
-        const h = (monthlyData[i].income / maxVal) * plotH;
+      for (let i = 0; i < cycles.length; i++) {
+        const h = (cycleData[i].income / maxVal) * plotH;
         const x = padLeft + barWidth * i + barGap + singleBarWidth;
         const y = padTop + plotH - h;
 
@@ -1934,9 +2290,9 @@
       ctx.lineWidth = 2.5;
       ctx.lineJoin = "round";
       let firstPoint = true;
-      for (let i = 0; i < months.length; i++) {
+      for (let i = 0; i < cycles.length; i++) {
         const x = padLeft + barWidth * i + barWidth / 2;
-        const y = padTop + plotH - (monthlyData[i].income / maxVal) * plotH;
+        const y = padTop + plotH - (cycleData[i].income / maxVal) * plotH;
         if (firstPoint) {
           ctx.moveTo(x, y);
           firstPoint = false;
@@ -1947,9 +2303,9 @@
       ctx.stroke();
 
       // 折线上的圆点
-      for (let i = 0; i < months.length; i++) {
+      for (let i = 0; i < cycles.length; i++) {
         const x = padLeft + barWidth * i + barWidth / 2;
-        const y = padTop + plotH - (monthlyData[i].income / maxVal) * plotH;
+        const y = padTop + plotH - (cycleData[i].income / maxVal) * plotH;
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
         ctx.fillStyle = "#0984e3";
@@ -1976,11 +2332,10 @@
 
     // ==================== 17. 事件绑定与初始化 ====================
     function init() {
-      // 显示当前日期
+      // 显示当前日期（包含账单周期标签）
       const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      $("headerDate").textContent = year + "年" + month + "月";
+      const cycle = getCurrentCycle();
+      $("headerDate").textContent = getCycleLabel(cycle.year, cycle.month);
 
       // 渲染首页
       refreshHome();
@@ -2040,13 +2395,39 @@
       }
 
       // ===== 设置页按钮事件 =====
+      $("btnSaveCycle").addEventListener("click", handleSaveCycle);
+      $("cycleDayInput").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") handleSaveCycle();
+      });
       $("btnSaveBudget").addEventListener("click", handleSaveBudget);
       $("btnExport").addEventListener("click", handleExportCSV);
       $("btnClearAll").addEventListener("click", handleClearAll);
-      // 预算输入框回车保存
       $("budgetInput").addEventListener("keydown", function(e) {
         if (e.key === "Enter") handleSaveBudget();
       });
+
+      // ===== 账单筛选事件 =====
+      // 类型筛选按钮
+      const filterTypeBtns = document.querySelectorAll(".filter-type button");
+      for (let k = 0; k < filterTypeBtns.length; k++) {
+        filterTypeBtns[k].addEventListener("click", function() {
+          handleFilterType(this.getAttribute("data-type"));
+        });
+      }
+      // 月份切换
+      $("btnPrevMonth").addEventListener("click", function() { changeFilterMonth(-1); });
+      $("btnNextMonth").addEventListener("click", function() { changeFilterMonth(1); });
+      // 点击月份标签回到本月
+      $("filterMonthLabel").addEventListener("click", resetFilterMonthToNow);
+      // 分类下拉变化
+      $("filterCategory").addEventListener("change", handleFilterCategory);
+      // 清除筛选按钮
+      $("btnClearFilter").addEventListener("click", handleClearFilter);
+
+      // 初始填充分类下拉
+      populateCategorySelect();
+      // 初始化筛选条 UI
+      updateFilterUI();
 
       // 窗口大小变化时重新绘制图表（Canvas 尺寸自适应）
       let resizeTimer;
