@@ -6,42 +6,44 @@
   <title>生成 App 图标</title>
   <style>
     body {
-      font-family: "YouYuan", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #f7f5f0;
+      font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+      background: #FAF6ED;
+      color: #1C2340;
       text-align: center;
       padding: 40px 20px;
     }
-    h1 { color: #6c5ce7; margin-bottom: 8px; }
-    p { color: #8c8c8c; margin-bottom: 24px; }
-    canvas { border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: 10px; }
+    h1 { color: #E28B00; margin-bottom: 8px; }
+    p { color: #77809F; margin-bottom: 24px; }
+    canvas { border-radius: 14px; margin: 10px; }
     .btn {
       display: inline-block;
       padding: 12px 28px;
-      background: #6c5ce7;
-      color: #fff;
+      background: linear-gradient(180deg, #FFD08A 0%, #E28B00 100%);
+      color: #2B1E05;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 16px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       margin: 10px;
       font-family: inherit;
+      box-shadow: 0 4px 14px rgba(120,92,40,0.25);
     }
-    .btn:active { background: #5a4bd1; }
-    .hint { font-size: 13px; color: #8c8c8c; margin-top: 16px; }
+    .btn:active { opacity: 0.85; }
+    .hint { font-size: 13px; color: #77809F; margin-top: 16px; }
   </style>
 </head>
 <body>
 
-  <h1>🎨 App 图标生成器</h1>
+  <h1>App 图标生成器 · 白昼换乘图</h1>
   <p>点击按钮下载图标，将下载的文件放到 accounting-app 文件夹中</p>
 
   <canvas id="icon192" width="192" height="192"></canvas>
   <canvas id="icon512" width="512" height="512"></canvas>
 
   <div>
-    <button class="btn" onclick="downloadIcon(192)">⬇ 下载 192×192 图标</button>
-    <button class="btn" onclick="downloadIcon(512)">⬇ 下载 512×512 图标</button>
+    <button class="btn" onclick="downloadIcon(192)">下载 192×192 图标</button>
+    <button class="btn" onclick="downloadIcon(512)">下载 512×512 图标</button>
   </div>
   <div class="hint">
     下载后放到 <code>accounting-app</code> 文件夹里，命名必须为 <code>icon-192.png</code> 和 <code>icon-512.png</code>
@@ -49,13 +51,12 @@
 
   <script>
     /**
-     * 生成记账App图标（圆形紫色底 + 💰emoji + 圆角效果）
+     * 生成记账App图标（白昼换乘图：纸面底 + 深墨换乘环 + 收支双线 + 琥珀核心）
      */
     function drawIcon(size) {
       const canvas = document.getElementById("icon" + size);
       const ctx = canvas.getContext("2d");
 
-      // 缩放上下文以适配高DPI（确保图标清晰）
       const dpr = window.devicePixelRatio || 1;
       canvas.width = size * dpr;
       canvas.height = size * dpr;
@@ -63,29 +64,46 @@
       canvas.style.height = size + "px";
       ctx.scale(dpr, dpr);
 
-      // 背景：紫色圆角方块
-      const pad = size * 0.1;
-      const radius = size * 0.22;
-      roundRect(ctx, pad, pad, size - pad * 2, size - pad * 2, radius);
-      ctx.fillStyle = "#6c5ce7";
+      const s = size;
+
+      // 背景：纸面圆角底
+      roundRect(ctx, 0, 0, s, s, s * 0.22);
+      const grad = ctx.createLinearGradient(0, 0, 0, s);
+      grad.addColorStop(0, "#FFFDF6");
+      grad.addColorStop(1, "#F7F0E2");
+      ctx.fillStyle = grad;
       ctx.fill();
 
-      // 白色内圈（让图标更立体）
-      const innerPad = size * 0.18;
-      const innerRadius = size * 0.18;
-      roundRect(ctx, innerPad, innerPad, size - innerPad * 2, size - innerPad * 2, innerRadius);
-      ctx.fillStyle = "#ffffff";
+      const c = s / 2;
+
+      // 深墨换乘环
+      ctx.beginPath();
+      ctx.arc(c, c, s * 0.335, 0, Math.PI * 2);
+      ctx.lineWidth = s * 0.058;
+      ctx.strokeStyle = "#1C2340";
+      ctx.stroke();
+
+      // 上下收支双线站台（祖母绿 / 洋红）
+      const dashR = s * 0.055;
+      const dashY = c - s * 0.335 - dashR - s * 0.01;
+      ctx.beginPath();
+      ctx.arc(c, dashY, dashR, 0, Math.PI * 2);
+      ctx.fillStyle = "#0FA37C";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(c, c + s * 0.335 + dashR + s * 0.01, dashR, 0, Math.PI * 2);
+      ctx.fillStyle = "#E13E4B";
       ctx.fill();
 
-      // 💰 emoji
-      const emojiSize = size * 0.45;
-      ctx.font = emojiSize + "px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("💰", size / 2, size / 2);
+      // 琥珀核心菱形（结余/行动）
+      ctx.save();
+      ctx.translate(c, c);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = "#E28B00";
+      ctx.fillRect(-s * 0.09, -s * 0.09, s * 0.18, s * 0.18);
+      ctx.restore();
     }
 
-    // 绘制圆角矩形
     function roundRect(ctx, x, y, w, h, r) {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -100,7 +118,6 @@
       ctx.closePath();
     }
 
-    // 下载图标
     function downloadIcon(size) {
       const canvas = document.getElementById("icon" + size);
       const link = document.createElement("a");
@@ -109,7 +126,6 @@
       link.click();
     }
 
-    // 页面加载时绘制图标
     drawIcon(192);
     drawIcon(512);
   </script>
