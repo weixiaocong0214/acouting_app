@@ -1,12 +1,12 @@
 {
   "name": "我的记账本",
   "short_name": "记账本",
-  "description": "简单好用的个人记账应用",
+  "description": "白昼线路图风格的个人记账应用：你的钱是一座城市，这个月就是一张线路图",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f7f5f0",
-  "theme_color": "#6c5ce7",
+  "background_color": "#FAF6ED",
+  "theme_color": "#FAF6ED",
   "icons": [
     {
       "src": "icon-192.png",
