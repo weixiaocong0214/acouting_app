@@ -228,66 +228,65 @@
       background: linear-gradient(180deg, var(--bg-panel), var(--bg-raise));
       border: 1px solid var(--hair);
       border-radius: var(--r-sm);
-      padding: 14px 16px 13px;
+      padding: 15px 16px 13px;
     }
     .budget-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 11px;
     }
-    .budget-header .budget-label { color: var(--ink-3); font-size: 12.5px; letter-spacing: 0.08em; }
+    .budget-header .budget-label {
+      color: var(--ink-3);
+      font-size: 12.5px;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .budget-label::before {
+      content: "";
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--amber);
+    }
     .budget-header .budget-amount {
-      font-size: 14.5px; font-weight: 700;
-      background: var(--bg);
-      border: 1px solid var(--hair);
-      border-radius: 7px;
-      padding: 3px 9px;
+      font-size: 15px; font-weight: 700;
       font-variant-numeric: tabular-nums;
       color: var(--ink);
     }
     .budget-track {
       position: relative;
-      height: 7px;
-      border-radius: 4px;
-      background: var(--bg);
-      border: 1px solid var(--hair);
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(46, 107, 239, 0.22);
       overflow: hidden;
     }
     .budget-fill {
       position: absolute; top: 0; bottom: 0; left: 0;
+      width: 100%;
       transform-origin: left center;
-      border-radius: 4px 0 0 4px;
+      background: var(--amber);
+      border-radius: 999px;
       transition: transform 0.5s, background 0.5s;
-    }
-    .budget-fill.safe { background: var(--emerald); }
-    .budget-fill.warn { background: var(--amber); }
-    .budget-fill.danger { background: var(--scarlet); }
-    /* 100% 终点站羽 */
-    .budget-track::after {
-      content: "";
-      position: absolute; top: -2px; right: -1px;
-      width: 11px; height: 11px;
-      border-radius: 50%;
-      border: 1.5px solid var(--hair-strong);
-      background: var(--bg);
-      z-index: 1;
     }
     .budget-warning {
       margin-top: 9px;
       font-size: 12px;
       font-weight: 600;
-      color: var(--amber);
+      color: var(--ink-3);
       display: flex;
       align-items: center;
       gap: 5px;
     }
     .budget-warning::before {
       content: "";
-      width: 6px; height: 6px; border-radius: 50%;
+      width: 5px; height: 5px; border-radius: 50%;
       background: currentColor;
     }
+    .budget-warning.warn { color: var(--amber); }
+    .budget-warning.danger { color: var(--scarlet); }
 
     /* ==================== 记一笔 · 换乘闸门 ==================== */
     .gate-wrap { padding: 14px 16px 4px; }
@@ -1138,9 +1137,9 @@
           <span class="budget-amount" id="budgetAmount">未设置</span>
         </div>
         <div class="budget-track">
-          <div class="budget-fill safe" id="budgetFill" style="transform:scaleX(0)"></div>
+          <div class="budget-fill" id="budgetFill" style="transform:scaleX(0)"></div>
         </div>
-        <div class="budget-warning" id="budgetWarning" style="display:none"></div>
+        <div class="budget-warning" id="budgetWarning"></div>
       </div>
     </div>
 
@@ -1875,17 +1874,17 @@
       fill.style.transform = "scaleX(" + pct / 100 + ")";
       fill.className = "budget-fill";
       const warning = $("budgetWarning");
+      warning.style.display = "flex";
+      warning.className = "budget-warning";
       if (pct >= 100) {
         fill.classList.add("danger");
-        warning.style.display = "block";
-        warning.textContent = "本月预算已超支 ¥" + Math.abs(remaining).toFixed(0);
+        warning.classList.add("danger");
+        warning.textContent = "已超支 ¥" + Math.abs(remaining).toFixed(0) + "，请留意";
       } else if (pct >= 80) {
-        fill.classList.add("warn");
-        warning.style.display = "block";
+        warning.classList.add("warn");
         warning.textContent = "已使用 " + Math.round(pct) + "%，剩余 ¥" + remaining.toFixed(0);
       } else {
-        fill.classList.add("safe");
-        warning.style.display = "none";
+        warning.textContent = "已使用 " + Math.round(pct) + "%，剩余 ¥" + remaining.toFixed(0);
       }
     }
 
